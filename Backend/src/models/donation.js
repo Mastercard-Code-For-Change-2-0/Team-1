@@ -12,12 +12,12 @@ const donationSchema = new mongoose.Schema(
     category: {
       type: String,
       enum: [
-        "clothing",
-        "electronics",
-        "stationery",
-        "furniture",
-        "toys",
-        "others",
+        "Clothing",
+        "Electronics",
+        "Stationery",
+        "Furniture",
+        "Toys",
+        "Others",
       ],
       required: true,
     },

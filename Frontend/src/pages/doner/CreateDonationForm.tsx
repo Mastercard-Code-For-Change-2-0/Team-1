@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUploader } from "@/components/ImageUploader";
 import { useDonations } from "@/hooks/useDonations";
 import DonorLayout from "./DonorLayout";
+import { tokenStore, createDonation } from "@/lib/api";
 
 interface DonationItem {
   category: string;
@@ -83,20 +84,21 @@ const CreateDonationForm = () => {
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
-    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      data.items.forEach((item) => {
-        addDonation({
-          itemName: item.itemName,
-          category: item.category,
-          description: item.description,
-          quantity: item.quantity,
-          image: item.image,
-        });
-      });
-
-      toast.success(`${data.items.length} donation${data.items.length > 1 ? 's' : ''} submitted successfully!`);
+      const token = tokenStore.get();
+      console.log(token);
+      for (const item of data.items) {
+        const formData = new FormData();
+        formData.append("title", item.itemName);
+        formData.append("category", item.category);
+        formData.append("description", item.description);
+        formData.append("quantity", String(item.quantity));
+        if (item.imageFile) {
+          formData.append("image", item.imageFile);
+        }
+        await createDonation(formData, token || "");
+      }
+      toast.success(`${data.items.length} donation${data.items.length > 1 ? "s" : ""} submitted successfully!`);
       navigate("/my-donations");
     } catch (error) {
       toast.error("Something went wrong. Please try again.");
