@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Upload, X } from "lucide-react";
+import { authApi, tokenStore } from "@/lib/api";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }: LoginModalProps) => {
     role: "",
     idProof: null as File | null,
   });
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -30,163 +32,58 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }: LoginModalProps) => {
     setFormData(prev => ({ ...prev, idProof: file }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate that a role is selected
-    if (!formData.role) {
-      alert("Please select a role");
-      return;
+  const submit = async (mode: 'login' | 'register') => {
+    if (!formData.email || !formData.password) return alert('Email and password required');
+    if (mode === 'register' && (!formData.username || !formData.role)) return alert('Name and role required');
+    try {
+      setLoading(true);
+      const resp = mode === 'register'
+        ? await authApi.register({ name: formData.username, email: formData.email, password: formData.password, role: formData.role as any })
+        : await authApi.login({ email: formData.email, password: formData.password });
+      tokenStore.set(resp.token);
+      const role = (resp.user?.role || formData.role) as 'donor' | 'receiver' | 'admin';
+      onLoginSuccess(role);
+    } catch (e: any) {
+      alert(e.message || 'Request failed');
+    } finally {
+      setLoading(false);
     }
-
-    // For dummy login, we only need the role
-    // In a real app, you would validate credentials here
-    onLoginSuccess(formData.role as 'donor' | 'receiver' | 'admin');
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center bg-gradient-to-r from-primary to-secondary bg-clip-text">
-            Login to Seva Sahayog Foundation
-          </DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-center">Login / Register</DialogTitle>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
-          {/* Username */}
+        <form onSubmit={(e) => { e.preventDefault(); submit('login'); }} className="space-y-6 mt-6">
           <div className="space-y-2">
-            <Label htmlFor="username" className="text-foreground font-medium">
-              Username
-            </Label>
-            <Input
-              id="username"
-              type="text"
-              placeholder="Enter your username"
-              value={formData.username}
-              onChange={(e) => handleInputChange("username", e.target.value)}
-              className="w-full transition-all duration-300 focus:ring-primary"
-              required
-            />
+            <Label htmlFor="username" className="text-foreground font-medium">Name</Label>
+            <Input id="username" type="text" placeholder="Your name" value={formData.username} onChange={(e) => handleInputChange("username", e.target.value)} className="w-full" />
           </div>
-
-          {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-foreground font-medium">
-              Email Address
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-              className="w-full transition-all duration-300 focus:ring-primary"
-              required
-            />
+            <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
+            <Input id="email" type="email" placeholder="you@example.com" value={formData.email} onChange={(e) => handleInputChange("email", e.target.value)} className="w-full" required />
           </div>
-
-          {/* Password */}
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-foreground font-medium">
-              Password
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={formData.password}
-              onChange={(e) => handleInputChange("password", e.target.value)}
-              className="w-full transition-all duration-300 focus:ring-primary"
-              required
-            />
+            <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
+            <Input id="password" type="password" placeholder="Password" value={formData.password} onChange={(e) => handleInputChange("password", e.target.value)} className="w-full" required />
           </div>
-
-          {/* Role Selection */}
           <div className="space-y-2">
-            <Label htmlFor="role" className="text-foreground font-medium">
-              Select Your Role
-            </Label>
-            <Select onValueChange={(value) => handleInputChange("role", value)} required>
-              <SelectTrigger className="w-full transition-all duration-300 focus:ring-primary">
-                <SelectValue placeholder="Choose your role" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border border-border">
-                <SelectItem value="donor" className="hover:bg-muted cursor-pointer">
-                  <div className="flex flex-col">
-                    <span className="font-medium">Donor</span>
-                    <span className="text-sm text-muted-foreground">Help others by donating</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="receiver" className="hover:bg-muted cursor-pointer">
-                  <div className="flex flex-col">
-                    <span className="font-medium">Receiver</span>
-                    <span className="text-sm text-muted-foreground">Receive help from the community</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="admin" className="hover:bg-muted cursor-pointer">
-                  <div className="flex flex-col">
-                    <span className="font-medium">Admin</span>
-                    <span className="text-sm text-muted-foreground">Manage and oversee operations</span>
-                  </div>
-                </SelectItem>
+            <Label className="text-foreground font-medium">Role (for registration)</Label>
+            <Select onValueChange={(value) => handleInputChange("role", value)}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Choose your role" /></SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="donor">Donor</SelectItem>
+                <SelectItem value="receiver">Receiver</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          {/* ID Proof Upload (only for receivers) */}
-          {formData.role === "receiver" && (
-            <div className="space-y-2">
-              <Label htmlFor="idProof" className="text-foreground font-medium">
-                ID Proof Document
-              </Label>
-              <div className="border-2 border-dashed border-border rounded-lg p-4 transition-all duration-300 hover:border-primary">
-                <input
-                  id="idProof"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  required={formData.role === "receiver"}
-                />
-                <label
-                  htmlFor="idProof"
-                  className="flex flex-col items-center justify-center cursor-pointer space-y-2"
-                >
-                  <Upload className="w-8 h-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground text-center">
-                    {formData.idProof
-                      ? formData.idProof.name
-                      : "Click to upload ID proof (PDF, Image, or Document)"}
-                  </span>
-                </label>
-              </div>
-              {formData.idProof && (
-                <div className="flex items-center justify-between bg-muted p-2 rounded-md">
-                  <span className="text-sm text-foreground truncate">
-                    {formData.idProof.name}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ ...prev, idProof: null }))}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            variant="default"
-            className="w-full h-12 text-lg font-semibold"
-          >
-            Login
-          </Button>
+          <div className="grid grid-cols-2 gap-3">
+            <Button type="button" className="h-11" disabled={loading} onClick={() => submit('login')}>Login</Button>
+            <Button type="button" className="h-11 bg-yellow-500 text-[#0F3D56] hover:bg-yellow-400" disabled={loading} onClick={() => submit('register')}>Register</Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
