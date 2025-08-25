@@ -9,12 +9,14 @@ import { Upload, X } from "lucide-react";
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLoginSuccess: (role: 'donor' | 'receiver' | 'admin') => void;
 }
 
-const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
+const LoginModal = ({ isOpen, onClose, onLoginSuccess }: LoginModalProps) => {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
+    password: "",
     role: "",
     idProof: null as File | null,
   });
@@ -30,9 +32,16 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Form submitted:", formData);
-    onClose();
+    
+    // Validate that a role is selected
+    if (!formData.role) {
+      alert("Please select a role");
+      return;
+    }
+
+    // For dummy login, we only need the role
+    // In a real app, you would validate credentials here
+    onLoginSuccess(formData.role as 'donor' | 'receiver' | 'admin');
   };
 
   return (
@@ -72,6 +81,22 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
               placeholder="Enter your email"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
+              className="w-full transition-all duration-300 focus:ring-primary"
+              required
+            />
+          </div>
+
+          {/* Password */}
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-foreground font-medium">
+              Password
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
               className="w-full transition-all duration-300 focus:ring-primary"
               required
             />
@@ -160,7 +185,7 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
             variant="default"
             className="w-full h-12 text-lg font-semibold"
           >
-            Create Account
+            Login
           </Button>
         </form>
       </DialogContent>

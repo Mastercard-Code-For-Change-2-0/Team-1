@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
-import ReceiverDashboard from './components/ReceiverDashboard';
+import ReceiverDashboard from './pages/ReceiverDashboard';
 
 function App() {
   return (

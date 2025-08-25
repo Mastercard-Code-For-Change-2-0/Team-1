@@ -27,6 +27,7 @@ import {
   MoreHorizontal,
   Bell,
   BellRing,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,7 +67,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import Navbar from './Navbar';
+import Navbar from '../components/Navbar';
 
 // Types
 type RequestItem = {
@@ -92,6 +93,7 @@ type Request = {
 type ReceiverDashboardProps = {
   isApproved?: boolean;
   initialRequests?: Request[];
+  onLogout?: () => void;
 };
 
 // Dummy data
@@ -694,7 +696,8 @@ const RequestDetailSheet: React.FC<{
 // Main Dashboard Component
 const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({ 
   isApproved = true, 
-  initialRequests = dummyRequests 
+  initialRequests = dummyRequests,
+  onLogout
 }) => {
   const [requests, setRequests] = useState<Request[]>(initialRequests);
   const [searchTerm, setSearchTerm] = useState("");
@@ -822,6 +825,12 @@ const ReceiverDashboard: React.FC<ReceiverDashboardProps> = ({
             <div className="flex items-center gap-4">
               <AddRequestDialog onAddRequest={handleAddRequest} />
               <NotificationsPanel />
+              {onLogout && (
+                <Button onClick={onLogout} variant="outline" className="flex items-center gap-2">
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              )}
             </div>
           </div>
         </div>
