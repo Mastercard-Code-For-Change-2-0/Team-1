@@ -20,9 +20,12 @@ const initialPendingDonors = [
 const allReceivers = [...initialPendingReceivers];
 const allDonors = [...initialPendingDonors];
 
+interface AdminDashboardProps {
+  onLogout: () => void;
+}
 
 // --- MAIN APP COMPONENT ---
-function App() {
+function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [currentView, setCurrentView] = useState('home'); // 'home', 'approval', 'matching', 'distribution'
   const [pendingReceivers, setPendingReceivers] = useState(initialPendingReceivers);
   const [pendingDonors, setPendingDonors] = useState(initialPendingDonors);
@@ -55,6 +58,31 @@ function App() {
 
   return (
     <div className="App">
+      {/* Header with Logout */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '1rem', 
+        backgroundColor: '#f8f9fa', 
+        borderBottom: '1px solid #e9ecef' 
+      }}>
+        <h1 style={{ margin: 0, color: '#333' }}>SEVA SAHYOG Admin Portal</h1>
+        <button 
+          onClick={onLogout}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Logout
+        </button>
+      </div>
+
       {currentView === 'home' && (
         <HomePage 
           onNavigateToApproval={() => setCurrentView('approval')}
@@ -288,4 +316,4 @@ const DonationDistributionPage = ({ receiver, donors, onBack }) => {
   );
 };
 
-export default App;
+export default AdminDashboard;
